@@ -1,0 +1,110 @@
+config:
+  target: 'ws://localhost:8080'
+  phases:
+    - duration: 8640
+      arrivalRate: 10
+      name: "Warm-up phase (scaled)"
+    - duration: 17280
+      arrivalRate: 20
+      rampTo: 50
+      name: "Ramping up to peak hours (scaled)"
+    - duration: 25920
+      arrivalRate: 50
+      name: "Peak hours (scaled)"
+    - duration: 17280
+      arrivalRate: 50
+      rampTo: 20
+      name: "Cooling down from peak (scaled)"
+    - duration: 8640
+      arrivalRate: 10
+      name: "Off-peak hours (scaled)"
+  processor: '../dist/processor/processor.js'
+
+scenarios:
+  - name: "Rapid Connect and Disconnect"
+    weight: 20
+    engine: 'ws'
+    flow:
+      - function: "generateBootNotification"
+      - send: "{{ payload }}"
+      - think: 2
+      - function: "generateHeartbeat"
+      - send: "{{ payload }}"
+      - think: 1
+      - close: {}
+
+  - name: "Boot and Heartbeat Scenario"
+    weight: 15
+    engine: 'ws'
+    flow:
+      - function: 'generateBootNotification'
+      - send: "{{ payload }}"
+      - think: 5
+      - function: 'generateHeartbeat'
+      - send: "{{ payload }}"
+      - think: 10
+
+  - name: "Authorization and Transaction Scenario"
+    weight: 15
+    engine: 'ws'
+    flow:
+      - function: 'generateAuthorize'
+      - send: "{{ payload }}"
+      - think: 2
+      - function: 'generateStartTransaction'
+      - send:
+          payload: "{{ payload }}"
+          capture:
+            - json: "$.payload.transactionId"
+              as: "transactionId"
+      - think: 3
+      - function: 'generateMeterValues'
+      - send: "{{ payload }}"
+      - think: 3
+      - function: 'generateStopTransaction'
+      - send: "{{ payload }}"
+      - think: 1
+
+  - name: "Long Authorization and Transaction Scenario"
+    weight: 5
+    engine: 'ws'
+    flow:
+      - function: 'generateAuthorize'
+      - send: "{{ payload }}"
+      - think: 2
+      - function: 'generateStartTransaction'
+      - send:
+          payload: "{{ payload }}"
+          capture:
+            - json: "$.payload.transactionId"
+              as: "transactionId"
+      - think: 3
+      - function: 'generateMeterValues'
+      - send: "{{ payload }}"
+      - think: 60
+      - function: 'generateStopTransaction'
+      - send: "{{ payload }}"
+      - think: 1
+
+  - name: "Status Notification and Firmware Update Scenario"
+    weight: 35
+    engine: 'ws'
+    flow:
+      - function: 'generateStatusNotification'
+      - send: "{{ payload }}"
+      - think: 2
+      - function: 'generateHeartbeat'
+      - send: "{{ payload }}"
+      - think: 3
+      - function: 'generateStatusNotification'
+      - function: 'modifyPayloadForFirmwareUpdate'
+      - send: "{{ payload }}"
+      - think: 2
+
+  - name: "Varied Status Notification Scenario"
+    weight: 10
+    engine: 'ws'
+    flow:
+      - function: 'generateVariedStatusNotification'
+      - send: "{{ payload }}"
+      - think: 5

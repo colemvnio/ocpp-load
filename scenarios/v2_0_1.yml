@@ -1,0 +1,20 @@
+# Placeholder scenario file for OCPP 2.0.1
+config:
+  # Target will be inherited or set by environment variable
+  # Phases might differ for 2.0.1 testing
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "v2.0.1 Warm-up"
+  processor: '../dist/processor/processor.js' # Correct path relative to scenarios dir
+
+scenarios:
+  - name: "v2.0.1 Basic Interaction (Placeholder)"
+    weight: 100
+    engine: 'ws'
+    flow:
+      # - function: 'generateV201BootNotification' # Example future function
+      - log: "Simulating basic v2.0.1 interaction (Not implemented)"
+      - think: 5
+      # - send: "{{ payload }}"
+      - close: {} 
